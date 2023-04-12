@@ -37,6 +37,7 @@ type Options struct {
 	LogName string
 	UserID  string
 	Token   string
+	Prefix  string
 }
 
 type Client struct {
@@ -137,7 +138,7 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 		return nil, fmt.Errorf("error closing multipart writer: %w", err)
 	}
 
-	requestURL := path.Join(c.workerURL.String(), identifier)
+	requestURL := path.Join(c.workerURL.String(), c.options.Prefix+identifier)
 	req, err := http.NewRequest("PUT", requestURL, body)
 	if err != nil {
 		return nil, fmt.Errorf("error creating upload request: %w", err)
@@ -161,7 +162,7 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 }
 
 func (c *Client) DeleteScaleFunction(identifier string) error {
-	requestURL := path.Join(c.workerURL.String(), identifier)
+	requestURL := path.Join(c.workerURL.String(), c.options.Prefix+identifier)
 	req, err := http.NewRequest("DELETE", requestURL, nil)
 	if err != nil {
 		return fmt.Errorf("error creating delete request: %w", err)

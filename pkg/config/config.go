@@ -29,8 +29,9 @@ var (
 )
 
 type Config struct {
-	UserID string
-	Token  string
+	UserID string `yaml:"user_id"`
+	Token  string `yaml:"token"`
+	Prefix string `yaml:"prefix"`
 }
 
 func New() *Config {
@@ -52,6 +53,7 @@ func (c *Config) Validate() error {
 func (c *Config) RootPersistentFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&c.UserID, "cloudflare-user-id", "", "The cloudflare user id")
 	flags.StringVar(&c.Token, "cloudflare-token", "", "The cloudflare token")
+	flags.StringVar(&c.Prefix, "cloudflare-prefix", "", "The cloudflare resource prefix")
 }
 
 func (c *Config) GlobalRequiredFlags(cmd *cobra.Command) error {
@@ -73,5 +75,6 @@ func (c *Config) GenerateOptions(logName string) (*cloudflare.Options, error) {
 		LogName: logName,
 		UserID:  c.UserID,
 		Token:   c.Token,
+		Prefix:  c.Prefix,
 	}, nil
 }
