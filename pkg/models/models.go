@@ -24,12 +24,13 @@ type UploadResponse struct {
 }
 
 type ResponseResult struct {
-	Id         string   `json:"id"`
-	CreatedOn  string   `json:"created_on"`
-	ModifiedOn string   `json:"modified_on"`
-	Etag       string   `json:"etag"`
-	UsageModel string   `json:"usage_model"`
-	Handlers   []string `json:"handlers"`
+	Id                   string   `json:"id"`
+	CreatedOn            string   `json:"created_on"`
+	ModifiedOn           string   `json:"modified_on"`
+	Etag                 string   `json:"etag"`
+	UsageModel           string   `json:"usage_model"`
+	Handlers             []string `json:"handlers"`
+	AvailableOnSubdomain bool     `json:"available_on_subdomain"`
 }
 
 type ResponseError struct {
