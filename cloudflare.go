@@ -149,7 +149,11 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 		return nil, fmt.Errorf("error uploading worker: %w", err)
 	}
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("error uploading worker: %s", resp.Status)
+		errBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("error uploading worker (%d: %s): %w", resp.StatusCode, resp.Status, err)
+		}
+		return nil, fmt.Errorf("error uploading worker (%d: %s): %s", resp.StatusCode, resp.Status, errBody)
 	}
 
 	res := new(models.UploadResponse)
@@ -172,7 +176,11 @@ func (c *Client) DeleteScaleFunction(identifier string) error {
 		return fmt.Errorf("error deleting worker: %w", err)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("error deleting worker: %s", resp.Status)
+		errBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("error deleting worker (%d: %s): %w", resp.StatusCode, resp.Status, err)
+		}
+		return fmt.Errorf("error deleting worker (%d: %s): %s", resp.StatusCode, resp.Status, errBody)
 	}
 	return nil
 }
