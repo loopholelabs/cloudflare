@@ -80,7 +80,12 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, functions []*bindings.ScaleFunction) (*models.UploadResponse, error) {
+type UploadedScaleFunction struct {
+	Identifier string
+	Subdomain  string
+}
+
+func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, functions []*bindings.ScaleFunction) (*UploadedScaleFunction, error) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 	wrapperScriptReader := bytes.NewReader(wrapperScript)
@@ -155,13 +160,40 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 		}
 		return nil, fmt.Errorf("error uploading worker (%d: %s): %s", resp.StatusCode, resp.Status, errBody)
 	}
-
 	res := new(models.UploadResponse)
 	err = json.NewDecoder(resp.Body).Decode(&res)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding upload response: %w", err)
 	}
-	return res, nil
+	if !res.Success {
+		return nil, fmt.Errorf("error uploading worker: %+v", res.Errors)
+	}
+
+	if !res.Result.AvailableOnSubdomain {
+		requestURL = c.workerURL.String() + "/" + c.options.Prefix + identifier + "/subdomain"
+		req, err = http.NewRequest("POST", requestURL, bytes.NewBufferString("{enabled: true}"))
+		if err != nil {
+			return nil, fmt.Errorf("error creating subdomain request: %w", err)
+		}
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Authorization", c.authorizationHeader)
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("error creating subdomain: %w", err)
+		}
+		if resp.StatusCode != 200 {
+			errBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, fmt.Errorf("error creating subdomain (%d: %s): %w", resp.StatusCode, resp.Status, err)
+			}
+			return nil, fmt.Errorf("error creating subdomain (%d: %s): %s", resp.StatusCode, resp.Status, errBody)
+		}
+	}
+
+	return &UploadedScaleFunction{
+		Identifier: identifier,
+		Subdomain:  c.options.Prefix + identifier,
+	}, nil
 }
 
 func (c *Client) DeleteScaleFunction(identifier string) error {
