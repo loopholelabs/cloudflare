@@ -171,7 +171,7 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 
 	if !res.Result.AvailableOnSubdomain {
 		requestURL = c.workerURL.String() + "/" + c.options.Prefix + identifier + "/subdomain"
-		req, err = http.NewRequest("POST", requestURL, bytes.NewBufferString("{enabled: true}"))
+		req, err = http.NewRequest("POST", requestURL, bytes.NewBufferString("{\"enabled\": true}"))
 		if err != nil {
 			return nil, fmt.Errorf("error creating subdomain request: %w", err)
 		}
