@@ -16,10 +16,16 @@
 
 package bindings
 
-import "github.com/loopholelabs/scalefile/scalefunc"
+type File struct {
+	Content     []byte
+	Extension   string
+	ContentType string
+	Binding     string
+	Type        string
+}
 
-type ScaleFunction struct {
-	Identifier    string
-	ScaleFunction *scalefunc.ScaleFunc
-	WASM          []byte
+type Function struct {
+	Identifier string
+	Source     []byte
+	Files      []File
 }

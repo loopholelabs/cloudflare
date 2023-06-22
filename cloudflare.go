@@ -80,12 +80,12 @@ func (c *Client) Close() error {
 	return nil
 }
 
-type UploadedScaleFunction struct {
+type UploadedFunction struct {
 	Identifier string
 	Subdomain  string
 }
 
-func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, functions []*bindings.ScaleFunction) (*UploadedScaleFunction, error) {
+func (c *Client) UploadFunction(identifier string, wrapperScript []byte, functions []*bindings.Function) (*UploadedFunction, error) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 	wrapperScriptReader := bytes.NewReader(wrapperScript)
@@ -95,18 +95,20 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 	}
 
 	for _, function := range functions {
-		sfReader := bytes.NewReader(function.ScaleFunction.Encode())
+		sfReader := bytes.NewReader(function.Source)
 		name := fmt.Sprintf("%s.bin", function.Identifier)
 		err = addPart(writer, name, name, "application/octet-stream", sfReader)
 		if err != nil {
-			return nil, fmt.Errorf("error adding scale function to multipart request: %w", err)
+			return nil, fmt.Errorf("error adding function to multipart request: %w", err)
 		}
 
-		wasmReader := bytes.NewReader(function.WASM)
-		name = fmt.Sprintf("%s.wasm", function.Identifier)
-		err = addPart(writer, name, name, "application/wasm", wasmReader)
-		if err != nil {
-			return nil, fmt.Errorf("error adding wasm module to multipart request: %w", err)
+		for _, file := range function.Files {
+			reader := bytes.NewReader(file.Content)
+			name = fmt.Sprintf("%s.%s", function.Identifier, file.Extension)
+			err = addPart(writer, name, name, file.ContentType, reader)
+			if err != nil {
+				return nil, fmt.Errorf("error adding file to multipart request: %w", err)
+			}
 		}
 	}
 
@@ -117,11 +119,14 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 			Name: fmt.Sprintf("__SF_%s", function.Identifier),
 			Part: fmt.Sprintf("%s.bin", function.Identifier),
 		})
-		workers = append(workers, bindings.Worker{
-			Type: "wasm_module",
-			Name: fmt.Sprintf("__WASM_%s", function.Identifier),
-			Part: fmt.Sprintf("%s.wasm", function.Identifier),
-		})
+
+		for _, file := range function.Files {
+			workers = append(workers, bindings.Worker{
+				Type: file.Type,
+				Name: fmt.Sprintf("__%s_%s", file.Binding, function.Identifier),
+				Part: fmt.Sprintf("%s.%s", function.Identifier, file.Extension),
+			})
+		}
 	}
 
 	metadata := bindings.Metadata{
@@ -190,13 +195,13 @@ func (c *Client) UploadScaleFunction(identifier string, wrapperScript []byte, fu
 		}
 	}
 
-	return &UploadedScaleFunction{
+	return &UploadedFunction{
 		Identifier: identifier,
 		Subdomain:  c.options.Prefix + identifier,
 	}, nil
 }
 
-func (c *Client) DeleteScaleFunction(identifier string) error {
+func (c *Client) DeleteFunction(identifier string) error {
 	requestURL := c.workerURL.String() + "/" + c.options.Prefix + identifier
 	req, err := http.NewRequest("DELETE", requestURL, nil)
 	if err != nil {
