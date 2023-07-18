@@ -192,7 +192,7 @@ func (c *Cloudflare) UploadFunction(identifier string, wrapperScript []byte, fun
 		}
 	}
 
-	return &UploadedFunction{
+	return &bindings.UploadedFunction{
 		Identifier: identifier,
 		Subdomain:  c.options.Prefix + identifier,
 	}, nil
