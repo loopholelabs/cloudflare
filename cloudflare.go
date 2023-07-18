@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/loopholelabs/cloudflare/pkg/bindings"
 	"github.com/loopholelabs/cloudflare/pkg/models"
@@ -32,11 +33,16 @@ import (
 	"sync"
 )
 
+var (
+	ErrDisabled = errors.New("cloudflare is disabled")
+)
+
 type Options struct {
-	LogName string
-	UserID  string
-	Token   string
-	Prefix  string
+	LogName  string
+	Disabled bool
+	UserID   string
+	Token    string
+	Prefix   string
 }
 
 type Cloudflare struct {
@@ -46,13 +52,17 @@ type Cloudflare struct {
 	workerURL           *url.URL
 	authorizationHeader string
 
-	context context.Context
-	cancel  context.CancelFunc
-	wg      sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 func New(options *Options, logger *zerolog.Logger) (*Cloudflare, error) {
 	l := logger.With().Str(options.LogName, "CLOUDFLARE").Logger()
+	if options.Disabled {
+		l.Debug().Msg("disabled")
+		return nil, ErrDisabled
+	}
 
 	workerURL, err := url.Parse("https://api.cloudflare.com/client/v4/accounts/" + options.UserID + "/workers/scripts")
 	if err != nil {
@@ -68,7 +78,7 @@ func New(options *Options, logger *zerolog.Logger) (*Cloudflare, error) {
 		options:             options,
 		workerURL:           workerURL,
 		authorizationHeader: authorizationHeader,
-		context:             ctx,
+		ctx:                 ctx,
 		cancel:              cancel,
 	}
 

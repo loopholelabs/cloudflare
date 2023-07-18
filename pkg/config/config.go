@@ -19,62 +19,63 @@ package config
 import (
 	"errors"
 	"github.com/loopholelabs/cloudflare"
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 var (
 	ErrUserIDRequired = errors.New("cloudflare user id is required")
 	ErrTokenRequired  = errors.New("cloudflare token is required")
+	ErrPrefixRequired = errors.New("cloudflare prefix is required")
+)
+
+const (
+	DefaultDisabled = false
 )
 
 type Config struct {
-	UserID string `yaml:"user_id"`
-	Token  string `yaml:"token"`
-	Prefix string `yaml:"prefix"`
+	Disabled bool   `yaml:"disabled"`
+	UserID   string `yaml:"user_id"`
+	Token    string `yaml:"token"`
+	Prefix   string `yaml:"prefix"`
 }
 
 func New() *Config {
-	return new(Config)
+	return &Config{
+		Disabled: DefaultDisabled,
+	}
 }
 
 func (c *Config) Validate() error {
-	if c.UserID == "" {
-		return ErrUserIDRequired
-	}
+	if !c.Disabled {
+		if c.UserID == "" {
+			return ErrUserIDRequired
+		}
 
-	if c.Token == "" {
-		return ErrTokenRequired
+		if c.Token == "" {
+			return ErrTokenRequired
+		}
+
+		if c.Prefix == "" {
+			return ErrPrefixRequired
+		}
 	}
 
 	return nil
 }
 
 func (c *Config) RootPersistentFlags(flags *pflag.FlagSet) {
+	flags.BoolVar(&c.Disabled, "cloudflare-disabled", DefaultDisabled, "Disable cloudflare")
 	flags.StringVar(&c.UserID, "cloudflare-user-id", "", "The cloudflare user id")
 	flags.StringVar(&c.Token, "cloudflare-token", "", "The cloudflare token")
 	flags.StringVar(&c.Prefix, "cloudflare-prefix", "", "The cloudflare resource prefix")
 }
 
-func (c *Config) GlobalRequiredFlags(cmd *cobra.Command) error {
-	err := cmd.MarkFlagRequired("cloudflare-user-id")
-	if err != nil {
-		return err
-	}
-
-	err = cmd.MarkFlagRequired("cloudflare-token")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (c *Config) GenerateOptions(logName string) (*cloudflare.Options, error) {
 	return &cloudflare.Options{
-		LogName: logName,
-		UserID:  c.UserID,
-		Token:   c.Token,
-		Prefix:  c.Prefix,
+		LogName:  logName,
+		Disabled: c.Disabled,
+		UserID:   c.UserID,
+		Token:    c.Token,
+		Prefix:   c.Prefix,
 	}, nil
 }
