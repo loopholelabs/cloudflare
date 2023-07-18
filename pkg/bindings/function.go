@@ -29,3 +29,8 @@ type Function struct {
 	Source     []byte
 	Files      []File
 }
+
+type UploadedFunction struct {
+	Identifier string
+	Subdomain  string
+}

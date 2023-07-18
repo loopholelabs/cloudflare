@@ -39,18 +39,20 @@ type Options struct {
 	Prefix  string
 }
 
-type Client struct {
-	logger              *zerolog.Logger
-	options             *Options
+type Cloudflare struct {
+	logger  *zerolog.Logger
+	options *Options
+
 	workerURL           *url.URL
 	authorizationHeader string
-	context             context.Context
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
+
+	context context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
 }
 
-func New(options *Options, logger *zerolog.Logger) (*Client, error) {
-	l := logger.With().Str(options.LogName, "Cloudflare").Logger()
+func New(options *Options, logger *zerolog.Logger) (*Cloudflare, error) {
+	l := logger.With().Str(options.LogName, "CLOUDFLARE").Logger()
 
 	workerURL, err := url.Parse("https://api.cloudflare.com/client/v4/accounts/" + options.UserID + "/workers/scripts")
 	if err != nil {
@@ -61,7 +63,7 @@ func New(options *Options, logger *zerolog.Logger) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	e := &Client{
+	e := &Cloudflare{
 		logger:              &l,
 		options:             options,
 		workerURL:           workerURL,
@@ -73,19 +75,14 @@ func New(options *Options, logger *zerolog.Logger) (*Client, error) {
 	return e, nil
 }
 
-func (c *Client) Close() error {
+func (c *Cloudflare) Close() error {
 	c.logger.Debug().Msg("closing cloudflare client")
 	c.cancel()
 	defer c.wg.Wait()
 	return nil
 }
 
-type UploadedFunction struct {
-	Identifier string
-	Subdomain  string
-}
-
-func (c *Client) UploadFunction(identifier string, wrapperScript []byte, functions []*bindings.Function) (*UploadedFunction, error) {
+func (c *Cloudflare) UploadFunction(identifier string, wrapperScript []byte, functions []*bindings.Function) (*bindings.UploadedFunction, error) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 	wrapperScriptReader := bytes.NewReader(wrapperScript)
@@ -201,7 +198,7 @@ func (c *Client) UploadFunction(identifier string, wrapperScript []byte, functio
 	}, nil
 }
 
-func (c *Client) DeleteFunction(identifier string) error {
+func (c *Cloudflare) DeleteFunction(identifier string) error {
 	requestURL := c.workerURL.String() + "/" + c.options.Prefix + identifier
 	req, err := http.NewRequest("DELETE", requestURL, nil)
 	if err != nil {
