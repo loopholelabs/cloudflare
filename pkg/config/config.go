@@ -23,9 +23,10 @@ import (
 )
 
 var (
-	ErrUserIDRequired = errors.New("cloudflare user id is required")
-	ErrTokenRequired  = errors.New("cloudflare token is required")
-	ErrPrefixRequired = errors.New("cloudflare prefix is required")
+	ErrUserIDRequired             = errors.New("cloudflare user id is required")
+	ErrTokenRequired              = errors.New("cloudflare token is required")
+	ErrPrefixRequired             = errors.New("cloudflare prefix is required")
+	ErrUpstreamRootDomainRequired = errors.New("cloudflare upstream root domain is required")
 )
 
 const (
@@ -33,10 +34,11 @@ const (
 )
 
 type Config struct {
-	Disabled bool   `yaml:"disabled"`
-	UserID   string `yaml:"user_id"`
-	Token    string `yaml:"token"`
-	Prefix   string `yaml:"prefix"`
+	Disabled           bool   `yaml:"disabled"`
+	UserID             string `yaml:"user_id"`
+	Token              string `yaml:"token"`
+	Prefix             string `yaml:"prefix"`
+	UpstreamRootDomain string `yaml:"upstream_root_domain"`
 }
 
 func New() *Config {
@@ -58,6 +60,10 @@ func (c *Config) Validate() error {
 		if c.Prefix == "" {
 			return ErrPrefixRequired
 		}
+
+		if c.UpstreamRootDomain == "" {
+			return ErrUpstreamRootDomainRequired
+		}
 	}
 
 	return nil
@@ -68,6 +74,7 @@ func (c *Config) RootPersistentFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&c.UserID, "cloudflare-user-id", "", "The cloudflare user id")
 	flags.StringVar(&c.Token, "cloudflare-token", "", "The cloudflare token")
 	flags.StringVar(&c.Prefix, "cloudflare-prefix", "", "The cloudflare resource prefix")
+	flags.StringVar(&c.UpstreamRootDomain, "cloudflare-upstream-root-domain", "", "The cloudflare upstream root domain")
 }
 
 func (c *Config) GenerateOptions(logName string) (*cloudflare.Options, error) {

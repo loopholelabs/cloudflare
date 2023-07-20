@@ -38,11 +38,12 @@ var (
 )
 
 type Options struct {
-	LogName  string
-	Disabled bool
-	UserID   string
-	Token    string
-	Prefix   string
+	LogName            string
+	Disabled           bool
+	UserID             string
+	Token              string
+	Prefix             string
+	UpstreamRootDomain string
 }
 
 type Cloudflare struct {
@@ -227,6 +228,10 @@ func (c *Cloudflare) DeleteFunction(identifier string) error {
 		return fmt.Errorf("error deleting worker (%d: %s): %s", resp.StatusCode, resp.Status, errBody)
 	}
 	return nil
+}
+
+func (c *Cloudflare) UpstreamRootDomain() string {
+	return c.options.UpstreamRootDomain
 }
 
 func addPart(w *multipart.Writer, name string, filename string, contentType string, r io.Reader) error {
