@@ -34,11 +34,11 @@ const (
 )
 
 type Config struct {
-	Disabled           bool   `yaml:"disabled"`
-	UserID             string `yaml:"user_id"`
-	Token              string `yaml:"token"`
-	Prefix             string `yaml:"prefix"`
-	UpstreamRootDomain string `yaml:"upstream_root_domain"`
+	Disabled           bool   `mapstructure:"disabled"`
+	UserID             string `mapstructure:"user_id"`
+	Token              string `mapstructure:"token"`
+	Prefix             string `mapstructure:"prefix"`
+	UpstreamRootDomain string `mapstructure:"upstream_root_domain"`
 }
 
 func New() *Config {
